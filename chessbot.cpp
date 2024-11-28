@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <iostream>
+#include <unordered_map>
 
 using namespace std;
 
@@ -23,6 +24,21 @@ uint64_t blackRooks   = 0x8100000000000000;
 uint64_t blackQueens  = 0x0800000000000000;
 uint64_t blackKing    = 0x1000000000000000;
 
+/* Map associating each bitboard with its name */
+unordered_map<uint64_t*, string> bitboardNames = {
+    {&whitePawns, "White Pawns"},
+    {&whiteKnights, "White Knights"},
+    {&whiteBishops, "White Bishops"},
+    {&whiteRooks, "White Rooks"},
+    {&whiteQueens, "White Queens"},
+    {&whiteKing, "White King"},
+    {&blackPawns, "Black Pawns"},
+    {&blackKnights, "Black Knights"},
+    {&blackBishops, "Black Bishops"},
+    {&blackRooks, "Black Rooks"},
+    {&blackQueens, "Black Queens"},
+    {&blackKing, "Black King"}
+};
 /* Rank and file mask constants used for bitwise computations*/
 
 // Rank masks
@@ -52,3 +68,28 @@ getting and getting LSB.*/
 #define clear(b, i) ((b) &= ~(1ULL << i))
 #define get(b, i) ((b) & (1ULL << i))
 #define get_lsb(b) (__builtin_ctzll(b))
+
+/* print board for visualization and debugging*/
+void printBitboard(uint64_t& board) {
+    string name = bitboardNames[&board];
+    cout << "Bitboard for " << name << ":" << endl;
+    for (int rank = 7; rank >= 0; --rank) {
+        for (int file = 0; file < 8; ++file) {
+            int square = rank * 8 + file;
+            cout << ((board >> square) & 1) << " ";
+        }
+        cout << endl;
+    }
+    cout << endl;
+}
+
+int main () {
+
+    printBitboard(whitePawns);
+
+    return 0;
+}
+
+
+
+
