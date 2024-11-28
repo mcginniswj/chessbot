@@ -44,3 +44,11 @@ constexpr uint64_t fileE = 0x1010101010101010;
 constexpr uint64_t fileF = 0x2020202020202020;
 constexpr uint64_t fileG = 0x4040404040404040;
 constexpr uint64_t fileH = 0x8080808080808080;
+
+/* Define some useful bit manipulations including setting, clearing 
+getting and getting LSB.*/
+
+#define set(b, i) ((b) |= (1ULL << i))
+#define clear(b, i) ((b) &= ~(1ULL << i))
+#define get(b, i) ((b) & (1ULL << i))
+#define get_lsb(b) (__builtin_ctzll(b))
