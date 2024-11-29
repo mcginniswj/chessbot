@@ -43,7 +43,11 @@ unordered_map<u64*, string> bitboardNames = {
     {&blackBishops, "Black Bishops"},
     {&blackRooks, "Black Rooks"},
     {&blackQueens, "Black Queens"},
-    {&blackKing, "Black King"}
+    {&blackKing, "Black King"},
+    {&allWhite, "White Pieces"},
+    {&allBlack, "Black Pieces"},
+    {&occupied, "Occupied Squares"},
+    {&emptySquares, "Empty Squares"}
 };
 
 /* Rank and file mask constants used for bitwise computations */
@@ -58,18 +62,14 @@ constexpr u64 rank7 = 0x00FF000000000000;
 constexpr u64 rank8 = 0xFF00000000000000;
 
 // File masks
-constexpr u64 fileA = 0x0101010101010101;
-constexpr u64 fileB = 0x0202020202020202;
-constexpr u64 fileC = 0x0404040404040404;
-constexpr u64 fileD = 0x0808080808080808;
-constexpr u64 fileE = 0x1010101010101010;
-constexpr u64 fileF = 0x2020202020202020;
-constexpr u64 fileG = 0x4040404040404040;
-constexpr u64 fileH = 0x8080808080808080;
-
-// Double file masks for Knight move gen
-constexpr u64 fileAB = fileA | fileB; // For moves crossing into files A or B
-constexpr u64 fileGH = fileG | fileH; // For moves crossing into files G or H
+constexpr u64 fileA = 0x8080808080808080;
+constexpr u64 fileB = 0x4040404040404040;
+constexpr u64 fileC = 0x2020202020202020;
+constexpr u64 fileD = 0x1010101010101010;
+constexpr u64 fileE = 0x0808080808080808;
+constexpr u64 fileF = 0x0404040404040404;
+constexpr u64 fileG = 0x0202020202020202;
+constexpr u64 fileH = 0x0101010101010101;
 
 /* Define some useful bit manipulations including setting, clearing 
 getting and getting LSB. */
@@ -87,13 +87,40 @@ void updateBoards() {
     emptySquares = ~occupied;
 }
 
+/* Reset to starting position*/
+void reset() {
+ whitePawns   = 0x000000000000FF00;
+ whiteKnights = 0x0000000000000042;
+ whiteBishops = 0x0000000000000024;
+ whiteRooks   = 0x0000000000000081;
+ whiteQueens  = 0x0000000000000008;
+ whiteKing    = 0x0000000000000010;
+
+ blackPawns   = 0x00FF000000000000;
+ blackKnights = 0x4200000000000000;
+ blackBishops = 0x2400000000000000;
+ blackRooks   = 0x8100000000000000;
+ blackQueens  = 0x0800000000000000;
+ blackKing    = 0x1000000000000000;
+
+ allWhite = whitePawns | whiteKnights | whiteBishops | whiteRooks | whiteQueens | whiteKing;
+ allBlack = blackPawns | blackKnights | blackBishops | blackRooks | blackQueens | blackKing;
+ occupied = allWhite | allBlack;
+ emptySquares = ~occupied;
+}
+
 /* Move Generation */
 
 // Pawn move generation (pseudo-legal moves)
-u64 pawnGen(u64 pawns, u64 emptySquares, u64 opponentPieces, bool isWhite) {
-    u64 singlePush = 0;
-    u64 doublePush = 0;
-    u64 captures = 0;
+u64 pawnGen(u64 pawns, bool isWhite) {
+    u64 singlePush = 0ULL;
+    u64 doublePush = 0ULL;
+    u64 captures = 0ULL;
+
+    updateBoards();
+    u64 opponentPieces;
+
+    isWhite ? opponentPieces = allBlack : opponentPieces = allWhite;
 
     // Generate single pushes and double pushes
     if (isWhite) {
@@ -120,21 +147,23 @@ u64 pawnGen(u64 pawns, u64 emptySquares, u64 opponentPieces, bool isWhite) {
 }
 
 // Knight move generation
-u64 knightGen(u64 knights, u64 friendlyPieces) {
+u64 knightGen(u64 knights, bool isWhite) {
     u64 attacks = 0ULL;
+    u64 friendlyPieces;
 
     // Generate potential attack squares for knights
-    attacks = (((knights >> 6)  | (knights << 10)) & ~fileGH) | // Shift right 6, left 10
-              (((knights >> 10) | (knights << 6))  & ~fileAB) | // Shift right 10, left 6
-              (((knights >> 15) | (knights << 17)) & ~fileG)  | // Shift right 15, left 17
-              (((knights >> 17) | (knights << 15)) & ~fileA);   // Shift right 17, left 15
+    attacks = (((knights >> 6)  | (knights << 10)) & ~(fileG | fileH)) | // Left-Down and Left-Up
+              (((knights >> 10) | (knights << 6))  & ~(fileA | fileB)) | // Right-Down and Right-Up
+              (((knights >> 15) | (knights << 17)) & ~(fileH))         | // Down-Left and Up-Left
+              (((knights >> 17) | (knights << 15)) & ~(fileA));          // Down-Right and Up-Right
 
     // Exclude friendly pieces from the attack mask
+    updateBoards();
+    isWhite ? friendlyPieces = allWhite : friendlyPieces = allBlack;
     attacks &= ~friendlyPieces;
 
     return attacks;
 }
-
 
 /* Print board for visualization and debugging */
 void printBoard(u64& board) {
@@ -150,29 +179,20 @@ void printBoard(u64& board) {
         }
         cout << endl;
     }
-    cout << "  a b c d e f g h" << endl;
+    cout << "  a b c d e f g h" << endl << endl;
 }
 
 int main() {
-
     printBoard(whiteKnights);
+    whiteKnights = knightGen(whiteKnights, true);
+
+    set(whiteKnights, 18);
+    set(whiteKnights, 21);
+
+    whiteKnights = knightGen(whiteKnights, true);
+    printBoard(whiteKnights);
+
     
-    whiteKnights = knightGen(whiteKnights, allWhite);
-    updateBoards();
 
-    printBoard(whiteKnights);
-
-    whiteKnights &= 0ULL;
-
-    whiteKnights |= (1ULL << 18); // Set bit 18 (c3)
-    whiteKnights |= (1ULL << 21); // Set bit 21 (f3)
-    updateBoards();
-
-    printBoard(whiteKnights);
-
-    whiteKnights = knightGen(whiteKnights, allWhite);
-    updateBoards();
-
-    printBoard(whiteKnights);
     return 0;
 }
