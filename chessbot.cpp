@@ -67,11 +67,9 @@ constexpr u64 fileF = 0x2020202020202020;
 constexpr u64 fileG = 0x4040404040404040;
 constexpr u64 fileH = 0x8080808080808080;
 
-// File exclusion masks
-constexpr u64 FILE_AB = fileA | fileB; // For moves crossing into files A or B
-constexpr u64 FILE_GH = fileG | fileH; // For moves crossing into files G or H
-constexpr u64 FILE_A  = fileA;         // Single file A
-constexpr u64 FILE_H  = fileH;         // Single file H
+// Double file masks for Knight move gen
+constexpr u64 fileAB = fileA | fileB; // For moves crossing into files A or B
+constexpr u64 fileGH = fileG | fileH; // For moves crossing into files G or H
 
 /* Define some useful bit manipulations including setting, clearing 
 getting and getting LSB. */
@@ -115,21 +113,26 @@ u64 pawnGen(u64 pawns, u64 emptySquares, u64 opponentPieces, bool isWhite) {
 // Knight move generation
 u64 knightGen(u64 knights, u64 friendlyPieces) {
     u64 attacks = 0ULL;
-    attacks = (((knights >> 6)  | (knights << 10)) & ~FILE_GH) |
-              (((knights >> 10) | (knights << 6))  & ~FILE_AB) |
-              (((knights >> 15) | (knights << 17)) & ~FILE_H)  |
-              (((knights >> 17) | (knights << 15)) & ~FILE_A);
 
-              attacks &= friendlyPieces;
+    // Generate potential attack squares for knights
+    attacks = (((knights >> 6)  | (knights << 10)) & ~fileGH) | // Shift right 6, left 10
+              (((knights >> 10) | (knights << 6))  & ~fileAB) | // Shift right 10, left 6
+              (((knights >> 15) | (knights << 17)) & ~fileG)  | // Shift right 15, left 17
+              (((knights >> 17) | (knights << 15)) & ~fileA);   // Shift right 17, left 15
+
+    // Exclude friendly pieces from the attack mask
+    attacks &= ~friendlyPieces;
+
     return attacks;
 }
+
 
 /* Print board for visualization and debugging */
 void printBitboard(u64& board) {
     string name = bitboardNames[&board];
 
     cout << "Bitboard for " << name << ":" << endl;
-    cout << "  a b c d e f g h" << endl;
+    
     for (int rank = 7; rank >= 0; --rank) {
         cout << rank + 1 << " ";
         for (int file = 0; file < 8; ++file) {
@@ -138,7 +141,7 @@ void printBitboard(u64& board) {
         }
         cout << endl;
     }
-    cout << endl;
+    cout << "  a b c d e f g h" << endl;
 }
 
 int main() {
