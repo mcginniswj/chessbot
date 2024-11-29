@@ -24,6 +24,14 @@ uint64_t blackRooks   = 0x8100000000000000;
 uint64_t blackQueens  = 0x0800000000000000;
 uint64_t blackKing    = 0x1000000000000000;
 
+//Combined bitboards 
+
+uint64_t allWhite = whitePawns | whiteKnights | whiteBishops | whiteRooks | whiteQueens | whiteKing;
+uint64_t allBlack = blackPawns | blackKnights | blackBishops | blackRooks | blackQueens | blackKing;
+uint64_t occupied = allWhite | allBlack;
+uint64_t empty = ~occupied;
+
+
 /* Map associating each bitboard with its name */
 unordered_map<uint64_t*, string> bitboardNames = {
     {&whitePawns, "White Pawns"},
@@ -86,6 +94,7 @@ void printBitboard(uint64_t& board) {
 int main () {
 
     printBitboard(whitePawns);
+    printBitboard(blackPawns);
 
     return 0;
 }
