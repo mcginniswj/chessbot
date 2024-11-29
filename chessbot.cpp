@@ -4,36 +4,34 @@
 
 using namespace std;
 
+typedef uint64_t u64;
+
 /* Initial board layout using bitboards */
 
-//Bitboards for white pieces
+// Bitboards for white pieces
+u64 whitePawns   = 0x000000000000FF00;
+u64 whiteKnights = 0x0000000000000042;
+u64 whiteBishops = 0x0000000000000024;
+u64 whiteRooks   = 0x0000000000000081;
+u64 whiteQueens  = 0x0000000000000008;
+u64 whiteKing    = 0x0000000000000010;
 
-uint64_t whitePawns   = 0x000000000000FF00;
-uint64_t whiteKnights = 0x0000000000000042;
-uint64_t whiteBishops = 0x0000000000000024;
-uint64_t whiteRooks   = 0x0000000000000081;
-uint64_t whiteQueens  = 0x0000000000000008;
-uint64_t whiteKing    = 0x0000000000000010;
+// Bitboards for black pieces
+u64 blackPawns   = 0x00FF000000000000;
+u64 blackKnights = 0x4200000000000000;
+u64 blackBishops = 0x2400000000000000;
+u64 blackRooks   = 0x8100000000000000;
+u64 blackQueens  = 0x0800000000000000;
+u64 blackKing    = 0x1000000000000000;
 
-//Bitboards for black pieces 
-
-uint64_t blackPawns   = 0x00FF000000000000;
-uint64_t blackKnights = 0x4200000000000000;
-uint64_t blackBishops = 0x2400000000000000;
-uint64_t blackRooks   = 0x8100000000000000;
-uint64_t blackQueens  = 0x0800000000000000;
-uint64_t blackKing    = 0x1000000000000000;
-
-//Combined bitboards 
-
-uint64_t allWhite = whitePawns | whiteKnights | whiteBishops | whiteRooks | whiteQueens | whiteKing;
-uint64_t allBlack = blackPawns | blackKnights | blackBishops | blackRooks | blackQueens | blackKing;
-uint64_t occupied = allWhite | allBlack;
-uint64_t empty = ~occupied;
-
+// Combined bitboards
+u64 allWhite = whitePawns | whiteKnights | whiteBishops | whiteRooks | whiteQueens | whiteKing;
+u64 allBlack = blackPawns | blackKnights | blackBishops | blackRooks | blackQueens | blackKing;
+u64 occupied = allWhite | allBlack;
+u64 emptySquares = ~occupied;
 
 /* Map associating each bitboard with its name */
-unordered_map<uint64_t*, string> bitboardNames = {
+unordered_map<u64*, string> bitboardNames = {
     {&whitePawns, "White Pawns"},
     {&whiteKnights, "White Knights"},
     {&whiteBishops, "White Bishops"},
@@ -47,31 +45,36 @@ unordered_map<uint64_t*, string> bitboardNames = {
     {&blackQueens, "Black Queens"},
     {&blackKing, "Black King"}
 };
-/* Rank and file mask constants used for bitwise computations*/
 
+/* Rank and file mask constants used for bitwise computations */
 // Rank masks
-constexpr uint64_t rank1 = 0x00000000000000FF;
-constexpr uint64_t rank2 = 0x000000000000FF00;
-constexpr uint64_t rank3 = 0x0000000000FF0000;
-constexpr uint64_t rank4 = 0x00000000FF000000;
-constexpr uint64_t rank5 = 0x000000FF00000000;
-constexpr uint64_t rank6 = 0x0000FF0000000000;
-constexpr uint64_t rank7 = 0x00FF000000000000;
-constexpr uint64_t rank8 = 0xFF00000000000000;
+constexpr u64 rank1 = 0x00000000000000FF;
+constexpr u64 rank2 = 0x000000000000FF00;
+constexpr u64 rank3 = 0x0000000000FF0000;
+constexpr u64 rank4 = 0x00000000FF000000;
+constexpr u64 rank5 = 0x000000FF00000000;
+constexpr u64 rank6 = 0x0000FF0000000000;
+constexpr u64 rank7 = 0x00FF000000000000;
+constexpr u64 rank8 = 0xFF00000000000000;
 
 // File masks
-constexpr uint64_t fileA = 0x0101010101010101;
-constexpr uint64_t fileB = 0x0202020202020202;
-constexpr uint64_t fileC = 0x0404040404040404;
-constexpr uint64_t fileD = 0x0808080808080808;
-constexpr uint64_t fileE = 0x1010101010101010;
-constexpr uint64_t fileF = 0x2020202020202020;
-constexpr uint64_t fileG = 0x4040404040404040;
-constexpr uint64_t fileH = 0x8080808080808080;
+constexpr u64 fileA = 0x0101010101010101;
+constexpr u64 fileB = 0x0202020202020202;
+constexpr u64 fileC = 0x0404040404040404;
+constexpr u64 fileD = 0x0808080808080808;
+constexpr u64 fileE = 0x1010101010101010;
+constexpr u64 fileF = 0x2020202020202020;
+constexpr u64 fileG = 0x4040404040404040;
+constexpr u64 fileH = 0x8080808080808080;
+
+// File exclusion masks
+constexpr u64 FILE_AB = fileA | fileB; // For moves crossing into files A or B
+constexpr u64 FILE_GH = fileG | fileH; // For moves crossing into files G or H
+constexpr u64 FILE_A  = fileA;         // Single file A
+constexpr u64 FILE_H  = fileH;         // Single file H
 
 /* Define some useful bit manipulations including setting, clearing 
-getting and getting LSB.*/
-
+getting and getting LSB. */
 #define set(b, i) ((b) |= (1ULL << i))
 #define clear(b, i) ((b) &= ~(1ULL << i))
 #define get(b, i) ((b) & (1ULL << i))
@@ -79,60 +82,50 @@ getting and getting LSB.*/
 
 /* Move Generation */
 
-//Pawn single push move generation
+// Pawn move generation (pseudo-legal moves)
+u64 pawnGen(u64 pawns, u64 emptySquares, u64 opponentPieces, bool isWhite) {
+    u64 singlePush = 0;
+    u64 doublePush = 0;
+    u64 captures = 0;
 
-uint64_t pawnPush(uint64_t pawns, bool isWhite) {
+    // Generate single pushes and double pushes
     if (isWhite) {
-        return (pawns << 8) & emptySquares; // White pawns move up
+        singlePush = (pawns << 8) & emptySquares; // White pawns move up
+        doublePush = (singlePush << 8) & emptySquares & 0x00000000FF000000; // White pawns from rank 2
     } else {
-        return (pawns >> 8) & emptySquares; // Black pawns move down
+        singlePush = (pawns >> 8) & emptySquares; // Black pawns move down
+        doublePush = (singlePush >> 8) & emptySquares & 0x0000FF0000000000; // Black pawns from rank 7
     }
-}
 
-//Pawn double push move generation
-uint64_t pawnDoublePush(uint64_t pawns, bool isWhite) {
+    // Generate captures
     if (isWhite) {
-        uint64_t singlePush = (pawns << 8) & emptySquares; // First square must be empty
-        return (singlePush << 8) & emptySquares & rank4; // Second square must also be empty
+        u64 leftCapture = (pawns << 7) & opponentPieces & ~fileH; // Up-left
+        u64 rightCapture = (pawns << 9) & opponentPieces & ~fileA; // Up-right
+        captures = leftCapture | rightCapture;
     } else {
-        uint64_t singlePush = (pawns >> 8) & emptySquares; // First square must be empty
-        return (singlePush >> 8) & emptySquares & rank5; // Second square must also be empty
+        u64 leftCapture = (pawns >> 9) & opponentPieces & ~fileH; // Down-left
+        u64 rightCapture = (pawns >> 7) & opponentPieces & ~fileA; // Down-right
+        captures = leftCapture | rightCapture;
     }
+
+    // Combine all moves
+    return singlePush | doublePush | captures;
 }
 
-//Pawn capture move generation
-uint64_t pawnCap(uint64_t pawns, uint64_t opponentPieces, bool isWhite) {
-    if (isWhite) {
-        uint64_t leftCapture = (pawns << 7) & opponentPieces & ~fileH; // Prevent wrap-around
-        uint64_t rightCapture = (pawns << 9) & opponentPieces & ~fileA; // Prevent wrap-around
-        return leftCapture | rightCapture;
-    } else {
-        uint64_t leftCapture = (pawns >> 9) & opponentPieces & ~fileH; // Prevent wrap-around
-        uint64_t rightCapture = (pawns >> 7) & opponentPieces & ~fileA; // Prevent wrap-around
-        return leftCapture | rightCapture;
-    }
+// Knight move generation
+u64 knightGen(u64 knights, u64 friendlyPieces) {
+    u64 attacks = 0ULL;
+    attacks = (((knights >> 6)  | (knights << 10)) & ~FILE_GH) |
+              (((knights >> 10) | (knights << 6))  & ~FILE_AB) |
+              (((knights >> 15) | (knights << 17)) & ~FILE_H)  |
+              (((knights >> 17) | (knights << 15)) & ~FILE_A);
+
+              attacks &= friendlyPieces;
+    return attacks;
 }
 
-//Generate all pawn moves 
-
-uint64_t pawnGen(uint64_t pawns, uint64_t opponentPieces, bool isWhite) {
-    uint64_t singlePush = pawnPush(pawns, isWhite);
-    uint64_t doublePush = pawnDoublePush(pawns, isWhite);
-    uint64_t captures = pawnCap(pawns, opponentPieces, isWhite);
-
-    return singlePush | doublePush | captures; // Combine all moves in to single bitboard
-}
-
-
-
-
-
-
-
-
-
-/* print board for visualization and debugging*/
-void printBitboard(uint64_t& board) {
+/* Print board for visualization and debugging */
+void printBitboard(u64& board) {
     string name = bitboardNames[&board];
     cout << "Bitboard for " << name << ":" << endl;
     for (int rank = 7; rank >= 0; --rank) {
@@ -145,14 +138,12 @@ void printBitboard(uint64_t& board) {
     cout << endl;
 }
 
-int main () {
+int main() {
+    printBitboard(whiteKnights);
+    
+    whiteKnights = knightGen(whiteKnights, allWhite);
 
-    printBitboard(whitePawns);
-    printBitboard(blackPawns);
+    printBitboard(whiteKnights);
 
     return 0;
 }
-
-
-
-
