@@ -77,6 +77,60 @@ getting and getting LSB.*/
 #define get(b, i) ((b) & (1ULL << i))
 #define get_lsb(b) (__builtin_ctzll(b))
 
+/* Move Generation */
+
+//Pawn single push move generation
+
+uint64_t pawnPush(uint64_t pawns, bool isWhite) {
+    if (isWhite) {
+        return (pawns << 8) & emptySquares; // White pawns move up
+    } else {
+        return (pawns >> 8) & emptySquares; // Black pawns move down
+    }
+}
+
+//Pawn double push move generation
+uint64_t pawnDoublePush(uint64_t pawns, bool isWhite) {
+    if (isWhite) {
+        uint64_t singlePush = (pawns << 8) & emptySquares; // First square must be empty
+        return (singlePush << 8) & emptySquares & rank4; // Second square must also be empty
+    } else {
+        uint64_t singlePush = (pawns >> 8) & emptySquares; // First square must be empty
+        return (singlePush >> 8) & emptySquares & rank5; // Second square must also be empty
+    }
+}
+
+//Pawn capture move generation
+uint64_t pawnCap(uint64_t pawns, uint64_t opponentPieces, bool isWhite) {
+    if (isWhite) {
+        uint64_t leftCapture = (pawns << 7) & opponentPieces & ~fileH; // Prevent wrap-around
+        uint64_t rightCapture = (pawns << 9) & opponentPieces & ~fileA; // Prevent wrap-around
+        return leftCapture | rightCapture;
+    } else {
+        uint64_t leftCapture = (pawns >> 9) & opponentPieces & ~fileH; // Prevent wrap-around
+        uint64_t rightCapture = (pawns >> 7) & opponentPieces & ~fileA; // Prevent wrap-around
+        return leftCapture | rightCapture;
+    }
+}
+
+//Generate all pawn moves 
+
+uint64_t pawnGen(uint64_t pawns, uint64_t opponentPieces, bool isWhite) {
+    uint64_t singlePush = pawnPush(pawns, isWhite);
+    uint64_t doublePush = pawnDoublePush(pawns, isWhite);
+    uint64_t captures = pawnCap(pawns, opponentPieces, isWhite);
+
+    return singlePush | doublePush | captures; // Combine all moves in to single bitboard
+}
+
+
+
+
+
+
+
+
+
 /* print board for visualization and debugging*/
 void printBitboard(uint64_t& board) {
     string name = bitboardNames[&board];
