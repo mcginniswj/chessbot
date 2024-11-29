@@ -127,8 +127,11 @@ u64 knightGen(u64 knights, u64 friendlyPieces) {
 /* Print board for visualization and debugging */
 void printBitboard(u64& board) {
     string name = bitboardNames[&board];
+
     cout << "Bitboard for " << name << ":" << endl;
+    cout << "  a b c d e f g h" << endl;
     for (int rank = 7; rank >= 0; --rank) {
+        cout << rank + 1 << " ";
         for (int file = 0; file < 8; ++file) {
             int square = rank * 8 + file;
             cout << ((board >> square) & 1) << " ";
