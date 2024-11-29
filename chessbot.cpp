@@ -24,7 +24,7 @@ u64 blackRooks   = 0x8100000000000000;
 u64 blackQueens  = 0x0800000000000000;
 u64 blackKing    = 0x1000000000000000;
 
-// Combined bitboards
+// Combined bitboards (dependent and must be updated constantly)
 u64 allWhite = whitePawns | whiteKnights | whiteBishops | whiteRooks | whiteQueens | whiteKing;
 u64 allBlack = blackPawns | blackKnights | blackBishops | blackRooks | blackQueens | blackKing;
 u64 occupied = allWhite | allBlack;
@@ -78,6 +78,15 @@ getting and getting LSB. */
 #define get(b, i) ((b) & (1ULL << i))
 #define get_lsb(b) (__builtin_ctzll(b))
 
+/* Update dependent bitboards*/
+
+void updateBoards() {
+    allWhite = whitePawns | whiteKnights | whiteBishops | whiteRooks | whiteQueens | whiteKing;
+    allBlack = blackPawns | blackKnights | blackBishops | blackRooks | blackQueens | blackKing;
+    occupied = allWhite | allBlack;
+    emptySquares = ~occupied;
+}
+
 /* Move Generation */
 
 // Pawn move generation (pseudo-legal moves)
@@ -128,7 +137,7 @@ u64 knightGen(u64 knights, u64 friendlyPieces) {
 
 
 /* Print board for visualization and debugging */
-void printBitboard(u64& board) {
+void printBoard(u64& board) {
     string name = bitboardNames[&board];
 
     cout << "Bitboard for " << name << ":" << endl;
@@ -145,11 +154,25 @@ void printBitboard(u64& board) {
 }
 
 int main() {
-    printBitboard(whiteKnights);
+
+    printBoard(whiteKnights);
     
     whiteKnights = knightGen(whiteKnights, allWhite);
+    updateBoards();
 
-    printBitboard(whiteKnights);
+    printBoard(whiteKnights);
 
+    whiteKnights &= 0ULL;
+
+    whiteKnights |= (1ULL << 18); // Set bit 18 (c3)
+    whiteKnights |= (1ULL << 21); // Set bit 21 (f3)
+    updateBoards();
+
+    printBoard(whiteKnights);
+
+    whiteKnights = knightGen(whiteKnights, allWhite);
+    updateBoards();
+
+    printBoard(whiteKnights);
     return 0;
 }
