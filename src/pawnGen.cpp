@@ -1,18 +1,13 @@
 #include "pawnGen.hpp"
 
-
-
 u64 PawnGen::generateMoves(u64 pawns, bool isWhite) {
-    Board Board;
     u64 singlePush = 0ULL;
     u64 doublePush = 0ULL;
     u64 captures = 0ULL;
 
-    Board.updateDependentBoards();
     u64 opponentPieces;
-    u64 emptySquares = Board.getBitBoard("emptySquares");
 
-    isWhite ? opponentPieces = Board.getBitBoard("allWhite") : opponentPieces = Board.getBitBoard("allBlack");
+    isWhite ? opponentPieces = allBlack : opponentPieces = allWhite;
 
     if (isWhite) {
         singlePush = (pawns << 8) & emptySquares;

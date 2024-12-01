@@ -4,23 +4,21 @@
 #include "board.hpp"
 
 int main() {
-    Board Board;
+    Board board;
+    PawnGen pawngen;
+    KnightGen knightgen;
 
-    Board.reset();
+    board.reset();
 
-    u64 whitePawns = Board.getBitBoard("whitePawns");
-    Board.printBoard(whitePawns);
-    u64 whiteKnights = Board.getBitBoard("whiteKnights");
-    Board.printBoard(whiteKnights);
+    board.printBoard(whitePawns);
+    board.printBoard(whiteKnights);
 
-    PawnGen pawnGen;
-    whitePawns= pawnGen.generateMoves(whitePawns, true);
+    whitePawns = pawngen.generateMoves(whitePawns, true);
+    whiteKnights = knightgen.generateMoves(whiteKnights, true);
+    board.updateDependentBoards();
 
-    KnightGen knightGen;
-    whiteKnights = knightGen.generateMoves(whiteKnights, true);
-
-    Board.printBoard(whitePawns);
-    Board.printBoard(whiteKnights);
+    board.printBoard(whitePawns);
+    board.printBoard(whiteKnights);
 
     return 0;
 }
