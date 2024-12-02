@@ -1,6 +1,7 @@
 #include "knightGen.hpp"
 
 u64 KnightGen::generateMoves(u64 knights, bool isWhite) {
+    Board board;
     u64 attacks = 0ULL;
     u64 friendlyPieces;
 
@@ -11,7 +12,7 @@ u64 KnightGen::generateMoves(u64 knights, bool isWhite) {
               (((knights >> 17) | (knights << 15)) & ~(fileH));          // Down-Left and Up-Left
 
     // Exclude friendly pieces from the attack mask
-    isWhite ? friendlyPieces = allWhite : friendlyPieces = allBlack;
+    isWhite ? friendlyPieces = board.getBitBoard("White Pieces") : friendlyPieces = board.getBitBoard("Black Pieces");
     attacks &= ~friendlyPieces;
 
     return attacks;

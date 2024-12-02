@@ -29,51 +29,45 @@ constexpr u64 fileF = 0x2020202020202020;
 constexpr u64 fileG = 0x4040404040404040;
 constexpr u64 fileH = 0x8080808080808080;
 
-// Utility functions
-#define set(b, i) ((b) |= (1ULL << i))
-#define clear(b, i) ((b) &= ~(1ULL << i))
-#define get(b, i) ((b) & (1ULL << i))
-#define get_lsb(b) (__builtin_ctzll(b))
-
-// Bitboards for white pieces
-extern u64 whitePawns;
-extern u64 whiteKnights;
-extern u64 whiteBishops;
-extern u64 whiteRooks;
-extern u64 whiteQueens;
-extern u64 whiteKing;
-
-// Bitboards for black pieces
-extern u64 blackPawns;
-extern u64 blackKnights;
-extern u64 blackBishops;
-extern u64 blackRooks;
-extern u64 blackQueens;
-extern u64 blackKing;
-
-// Combined bitboards (dependent and must be updated constantly)
-extern u64 allWhite;
-extern u64 allBlack;
-extern u64 occupied;
-extern u64 emptySquares;
-
-// Map associating each bitboard with its name
-extern unordered_map<u64*, string> bitboardNames;
-
 class Board {
+private:
+    // Bitboards for white pieces
+    u64 whitePawns;
+    u64 whiteKnights;
+    u64 whiteBishops;
+    u64 whiteRooks;
+    u64 whiteQueens;
+    u64 whiteKing;
 
+    // Bitboards for black pieces
+    u64 blackPawns;
+    u64 blackKnights;
+    u64 blackBishops;
+    u64 blackRooks;
+    u64 blackQueens;
+    u64 blackKing;
+
+    // Combined bitboards
+    u64 allWhite;
+    u64 allBlack;
+    u64 occupied;
+    u64 emptySquares;
+
+    // Map associating bitboard names to their corresponding variables
+    unordered_map<string, u64*> bitboardMap;
+
+    // Updates dependent bitboards
+    void updateDependentBoards();
+    
 public:
     Board();
 
     void reset();
+    void printBoard(const string& pieceName) const;
 
-    void updateDependentBoards();
-
-    void printBoard(u64& board);
-
-    u64 getBitBoard(string piece); 
-
-    void setBitBoard(string piece, u64 value);
+    // Getter and setter for bitboards
+    u64 getBitBoard(const string& piece) const;
+    void setBitBoard(const string& piece, u64 value);
 };
 
-#endif // BITBOARD_H
+#endif // BOARD_H
