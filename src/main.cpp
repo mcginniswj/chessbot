@@ -7,16 +7,15 @@ int main() {
     Board board;
     PawnGen pawngen;
     KnightGen knightgen;
+    RookGen rookgen;
     u64 temp;
 
-    board.setBitBoard("White Knights", (1ULL << 21));
-    board.printBoard("White Pieces");
+    board.printBoard("White Rooks");
+    board.setBitBoard("White Rooks", 1ULL << 24);
+    temp = rookgen.generateMoves(board.getBitBoard("White Rooks"), true);
+    board.setBitBoard("White Rooks", temp);
 
-    temp = knightgen.generateMoves(board.getBitBoard("White Knights"), true);
-    board.setBitBoard("White Knights", temp);
-
-    board.printBoard("White Knights");
-    board.printBoard("White Pieces");
+    board.printBoard("White Rooks");
 
     return 0;
 }
