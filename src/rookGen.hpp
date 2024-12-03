@@ -1,12 +1,19 @@
-#ifndef ROOKGEN_H
-#define ROOKGEN_H
+#ifndef ROOKGEN_HPP
+#define ROOKGEN_HPP
 
 #include "board.hpp"
+#include <cstdint>
+
+typedef uint64_t u64;
 
 class RookGen {
 public:
-    // Generates all legal rook moves for a given rook bitboard
+    enum class Direction { UP, DOWN, LEFT, RIGHT };
+
     u64 generateMoves(u64 rooks, bool isWhite);
+
+private:
+    u64 slidingAttack(u64 squareMask, u64 occupied, u64 friendly, Direction dir);
 };
 
-#endif // ROOKGEN_H
+#endif // ROOKGEN_HPP

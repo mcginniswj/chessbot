@@ -10,11 +10,13 @@ int main() {
     RookGen rookgen;
     u64 temp;
 
-    board.printBoard("White Rooks");
+    
     board.setBitBoard("White Rooks", 1ULL << 24);
+    board.printBoard("White Rooks");
+    board.printBoard("Occupied Squares");
     temp = rookgen.generateMoves(board.getBitBoard("White Rooks"), true);
     board.setBitBoard("White Rooks", temp);
-
+    board.printBoard("White Pieces");
     board.printBoard("White Rooks");
 
     return 0;

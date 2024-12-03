@@ -2,61 +2,61 @@
 
 u64 RookGen::generateMoves(u64 rooks, bool isWhite) {
     Board board;
-    u64 moves = 0ULL;  // To store all possible moves
-
-    // Get bitboards for occupied squares and opponent pieces
+    u64 moves = 0ULL;
     u64 occupied = board.getBitBoard("Occupied Squares");
-    u64 opponentPieces = isWhite ? board.getBitBoard("Black Pieces") : board.getBitBoard("White Pieces");
+    u64 friendlyPieces;
 
-    // Iterate over each square on the rook's bitboard
+    isWhite ? friendlyPieces = board.getBitBoard("White Pieces") : friendlyPieces = board.getBitBoard("Black Pieces");
+
+    // Loop over all rook positions
     while (rooks) {
-        // Get the index of the current rook (lowest set bit)
-        int square = __builtin_ctzll(rooks);
-        
-        // Mask to isolate the square of interest
-        u64 currentSquare = 1ULL << square;
+        int square = __builtin_ctzll(rooks); // Get index of the least significant bit set
+        rooks &= rooks - 1;                 // Remove the rook from the bitboard
 
-        // Generate moves in all 4 directions
+        u64 squareMask = 1ULL << square;
 
-        // 1. Upwards (north)
-        u64 upMoves = (currentSquare << 8) & ~occupied; // Move upwards until blocked
-        while (upMoves) {
-            int moveSquare = __builtin_ctzll(upMoves);
-            moves |= (1ULL << moveSquare);  // Add move to list
-            if (occupied & (1ULL << moveSquare)) break;  // Blocked by a piece
-            upMoves <<= 8;
-        }
-
-        // 2. Downwards (south)
-        u64 downMoves = (currentSquare >> 8) & ~occupied; // Move downwards until blocked
-        while (downMoves) {
-            int moveSquare = __builtin_ctzll(downMoves);
-            moves |= (1ULL << moveSquare);
-            if (occupied & (1ULL << moveSquare)) break;  // Blocked by a piece
-            downMoves >>= 8;
-        }
-
-        // 3. Leftwards (west)
-        u64 leftMoves = (currentSquare << 1) & ~fileA & ~occupied; // Move left until blocked
-        while (leftMoves) {
-            int moveSquare = __builtin_ctzll(leftMoves);
-            moves |= (1ULL << moveSquare);
-            if (occupied & (1ULL << moveSquare)) break;  // Blocked by a piece
-            leftMoves <<= 1;
-        }
-
-        // 4. Rightwards (east)
-        u64 rightMoves = (currentSquare >> 1) & ~fileH & ~occupied; // Move right until blocked
-        while (rightMoves) {
-            int moveSquare = __builtin_ctzll(rightMoves);
-            moves |= (1ULL << moveSquare);
-            if (occupied & (1ULL << moveSquare)) break;  // Blocked by a piece
-            rightMoves >>= 1;
-        }
-
-        // Remove the current rook from the rooks bitboard
-        rooks &= rooks - 1;
+        // Generate moves in all four directions
+        moves |= slidingAttack(squareMask, occupied, friendlyPieces, Direction::UP);
+        moves |= slidingAttack(squareMask, occupied, friendlyPieces, Direction::DOWN);
+        moves |= slidingAttack(squareMask, occupied, friendlyPieces, Direction::LEFT);
+        moves |= slidingAttack(squareMask, occupied, friendlyPieces, Direction::RIGHT);
     }
 
     return moves;
+}
+
+// Sliding attack in a specific direction
+u64 RookGen::slidingAttack(u64 squareMask, u64 occupied, u64 friendly, Direction dir) {
+    u64 attacks = 0ULL;
+    int shift;
+
+    // Determine the shift based on the direction
+    switch (dir) {
+    case Direction::UP: shift = 8; break;
+    case Direction::DOWN: shift = -8; break;
+    case Direction::LEFT: shift = -1; break;
+    case Direction::RIGHT: shift = 1; break;
+    }
+
+    u64 blocker = squareMask;
+
+    while (true) {
+        // Shift the blocker
+        if (shift > 0) blocker <<= shift; // Up, Right
+        else blocker >>= -shift;         // Down, Left
+
+        // Break if out of bounds or no more blockers
+        if ((dir == Direction::LEFT && (blocker & fileH)) || (dir == Direction::RIGHT && (blocker & fileA)) || blocker == 0) break;
+
+        // Add the blocker to the attacks
+        attacks |= blocker;
+
+        // Stop if the blocker hits any occupied square
+        if (blocker & occupied) break;
+
+        // Exclude friendly pieces
+        attacks &= ~friendly;
+    }
+
+    return attacks;
 }
